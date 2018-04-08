@@ -3,6 +3,10 @@ import cv2
 import sys
 from time import time
 import dlib
+import os
+import mxnet as mx
+from detector_model.mtcnn_detector import MtcnnDetector
+from detect import mtcnn_detect
 import kcftracker
 
 selectingObject = False
@@ -45,6 +49,10 @@ def draw_boundingbox(event, x, y, flags, param):
 
 
 if __name__ == '__main__':
+    detector_model_dir = os.path.join('/Volumes/Transcend/jintian/KCF-python3/detector_model/model')
+    detector = MtcnnDetector(model_folder=detector_model_dir, minsize=40, threshold=[0.8, 0.8, 0.9], ctx=mx.cpu(0),
+                             num_worker=4,
+                             accurate_landmark=False)
 
     if (len(sys.argv) == 1):
         cap = cv2.VideoCapture("/Volumes/Transcend/jintian/SmartEye/data/videos/1.mp4")
@@ -61,8 +69,9 @@ if __name__ == '__main__':
     # if you use hog feature, there will be a short pause after you draw a first boundingbox,
     # that is due to the use of Numba.
     cv2.namedWindow('tracking')
-
-    frontFaceDetector = dlib.get_frontal_face_detector()
+    mtcnn_flag = True
+    if not mtcnn_flag:
+        frontFaceDetector = dlib.get_frontal_face_detector()
 
     # cv2.setMouseCallback('tracking', draw_boundingbox)
 
@@ -74,23 +83,37 @@ if __name__ == '__main__':
             break
 
         if initTracking:
-            faceRect = frontFaceDetector(frame, 0)
+            if not mtcnn_flag:
+                faceRect = frontFaceDetector(frame, 0)
+            else:
+                _,_,faceRect = mtcnn_detect(detector, frame)
             if (len(faceRect) == 0):
                 continue
             bbox = faceRect[0]
-            print(("only once:", bbox))
+            print("only once:", bbox)
             # convert dlib rect to opencv rect
-            curFaceBbox = (int(bbox.left()), int(bbox.top()), int(bbox.right() - bbox.left()),
-                           int(bbox.bottom() - bbox.top()))
+            if not mtcnn_flag:
+                curFaceBbox = (int(bbox.left()), int(bbox.top()), int(bbox.right() - bbox.left()),
+                               int(bbox.bottom() - bbox.top()))
+            else:
+                curFaceBbox = (int(bbox[0]), int(bbox[1]), int(bbox[2] - bbox[0]),
+                               int(bbox[3] - bbox[1]))
 
         if (selectingObject):
             cv2.rectangle(frame, (ix, iy), (cx, cy), (0, 255, 255), 1)
         elif (initTracking):
             # cv2.rectangle(frame, (ix, iy), (ix + w, iy + h), (0, 255, 255), 2)
             # tracker.init([ix, iy, w, h], frame)
-            cv2.rectangle(frame, (int(bbox.left()), int(bbox.top())), (int(bbox.right()), int(bbox.bottom())),
-                          (0, 255, 255), 2)
+            # print(curFaceBbox)
             tracker.init(curFaceBbox, frame)
+            if not mtcnn_flag:
+                cv2.rectangle(frame, (int(bbox.left()), int(bbox.top())), (int(bbox.right()), int(bbox.bottom())),
+                              (0, 255, 255), 2)
+            else:
+                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),
+                              (0, 255, 255), 2)
+            # cv2.imshow('temp', frame)
+            # cv2.waitKey(0)
 
             initTracking = False
             onTracking = True
