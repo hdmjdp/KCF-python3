@@ -58,8 +58,8 @@ if __name__ == '__main__':
         assert (0), "too many arguments"
 
     tracker = kcftracker.KCFTracker(True, True, True)  # hog, fixed_window, multiscale
-    # if you use hog feature, there will be a short pause after you draw a first boundingbox, that is due to the use of Numba.
-
+    # if you use hog feature, there will be a short pause after you draw a first boundingbox,
+    # that is due to the use of Numba.
     cv2.namedWindow('tracking')
 
     frontFaceDetector = dlib.get_frontal_face_detector()
@@ -78,7 +78,7 @@ if __name__ == '__main__':
             if (len(faceRect) == 0):
                 continue
             bbox = faceRect[0]
-            print(("only once:",bbox))
+            print(("only once:", bbox))
             # convert dlib rect to opencv rect
             curFaceBbox = (int(bbox.left()), int(bbox.top()), int(bbox.right() - bbox.left()),
                            int(bbox.bottom() - bbox.top()))
@@ -88,8 +88,8 @@ if __name__ == '__main__':
         elif (initTracking):
             # cv2.rectangle(frame, (ix, iy), (ix + w, iy + h), (0, 255, 255), 2)
             # tracker.init([ix, iy, w, h], frame)
-            cv2.rectangle(frame, (int(bbox.left()), int(bbox.top())), ( int(bbox.right() ), int(bbox.bottom())),
-                                  (0, 255, 255), 2)
+            cv2.rectangle(frame, (int(bbox.left()), int(bbox.top())), (int(bbox.right()), int(bbox.bottom())),
+                          (0, 255, 255), 2)
             tracker.init(curFaceBbox, frame)
 
             initTracking = False
